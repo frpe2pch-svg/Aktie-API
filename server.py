@@ -5,30 +5,28 @@ app = Flask(__name__)
 
 @app.route("/portfolio")
 def portfolio():
-    # Hämta tickers från query-parameter
+    # Hämta tickers från Lovable (query-param)
     tickers_param = request.args.get("tickers", "")
     tickers = [t.strip().upper() for t in tickers_param.split(",") if t.strip()]
 
     if not tickers:
-        return jsonify({"error": "Ange minst en ticker, t.ex. ?tickers=AAPL,TSLA"})
+        return jsonify({"error": "Ingen ticker angiven. Lovable måste skicka tickers."})
 
     stocks = []
 
     for t in tickers:
         try:
-            # Hämta veckodata
             df = yf.download(t, period="1mo", interval="1wk", progress=False, threads=False, auto_adjust=False)
             price = round(float(df["Close"].iloc[-1]), 2) if not df.empty else None
 
-            # Hämta företagsinfo från Yahoo Finance
             info = yf.Ticker(t).info
-            name = info.get("shortName") or t  # fallback till ticker om namn saknas
+            name = info.get("shortName") or t
 
             stocks.append({
                 "symbol": t,
                 "name": name,
-                "motivation": "",            # kan fyllas i av användaren eller AI
-                "current_price_sek": price,  # just nu i USD, kan konverteras till SEK senare
+                "motivation": "",            # Tom motivation, kan fyllas av Lovable/AI
+                "current_price_sek": price,  # Just nu USD
                 "recommended_amount": None
             })
         except:
