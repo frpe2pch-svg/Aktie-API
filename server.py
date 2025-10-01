@@ -5,7 +5,6 @@ app = Flask(__name__)
 
 @app.route("/portfolio")
 def portfolio():
-    # Hämta tickers från Lovable (query-param)
     tickers_param = request.args.get("tickers", "")
     tickers = [t.strip().upper() for t in tickers_param.split(",") if t.strip()]
 
@@ -15,9 +14,11 @@ def portfolio():
     stocks = []
 
     for t in tickers:
+        print(f"Hämtar data för: {t}")  # Logg
         try:
             df = yf.download(t, period="1mo", interval="1wk", progress=False, threads=False, auto_adjust=False)
             price = round(float(df["Close"].iloc[-1]), 2) if not df.empty else None
+            print(f"Pris för {t}: {price}")
 
             info = yf.Ticker(t).info
             name = info.get("shortName") or t
@@ -25,11 +26,13 @@ def portfolio():
             stocks.append({
                 "symbol": t,
                 "name": name,
-                "motivation": "",            # Tom motivation, kan fyllas av Lovable/AI
-                "current_price_sek": price,  # Just nu USD
+                "motivation": "",
+                "current_price_sek": price,
                 "recommended_amount": None
             })
-        except:
+        except Exception as e:
+            print(f"Fel för {t}: {e}")
+            # Lägg ändå till aktien med price=None
             stocks.append({
                 "symbol": t,
                 "name": t,
