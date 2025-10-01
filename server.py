@@ -1,6 +1,5 @@
 from flask import Flask, jsonify, request
 import yfinance as yf
-import pandas as pd
 
 app = Flask(__name__)
 
@@ -15,57 +14,30 @@ def portfolio():
     stocks = []
 
     for t in tickers:
-        print(f"Hämtar data för: {t}")
+        print(f"Hämtar data för: {t}")  # Logg
         try:
-            ticker_obj = yf.Ticker(t)
+            df = yf.download(t, period="1mo", interval="1wk", progress=False, threads=False, auto_adjust=False)
+            price = round(float(df["Close"].iloc[-1]), 2) if not df.empty else None
+            print(f"Pris för {t}: {price}")
 
-            # Historiska priser senaste 1 månad
-            df = ticker_obj.history(period="1mo", interval="1d")
-            latest_price = round(float(df["Close"].iloc[-1]), 2) if not df.empty else None
-            ma20 = round(df["Close"].rolling(window=20).mean().iloc[-1], 2) if len(df) >= 20 else None
-            volatility = round(df["Close"].pct_change().std(), 4) if not df.empty else None
-
-            # Fundamental data
-            info = ticker_obj.info
+            info = yf.Ticker(t).info
             name = info.get("shortName") or t
-            pe_ratio = info.get("trailingPE")
-            eps = info.get("trailingEps")
-            dividend_yield = info.get("dividendYield")
-            market_cap = info.get("marketCap")
-            sector = info.get("sector")
-            beta = info.get("beta")
 
             stocks.append({
                 "symbol": t,
                 "name": name,
-                "current_price_usd": latest_price,
-                "ma20": ma20,
-                "volatility": volatility,
-                "beta": beta,
-                "pe_ratio": pe_ratio,
-                "eps": eps,
-                "dividend_yield": dividend_yield,
-                "market_cap": market_cap,
-                "sector": sector,
                 "motivation": "",
+                "current_price_sek": price,
                 "recommended_amount": None
             })
-
         except Exception as e:
             print(f"Fel för {t}: {e}")
+            # Lägg ändå till aktien med price=None
             stocks.append({
                 "symbol": t,
                 "name": t,
-                "current_price_usd": None,
-                "ma20": None,
-                "volatility": None,
-                "beta": None,
-                "pe_ratio": None,
-                "eps": None,
-                "dividend_yield": None,
-                "market_cap": None,
-                "sector": None,
                 "motivation": "",
+                "current_price_sek": None,
                 "recommended_amount": None
             })
 
